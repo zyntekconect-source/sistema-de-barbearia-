@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  DASHBOARD.HTML — ZYNTEK BARBERSHOP MANAGEMENT SYSTEM
+  Painel administrativo para donos e barbeiros.
+  Exibe: estatísticas, agendamentos do dia, clientes e gestão completa.
+  Projeto Oficial Zyntek
+  ============================================================
+-->
+<!--
+  SEÇÃO 1: CONFIGURAÇÃO DO DOCUMENTO
+  INTEGRAÇÃO BACK-END: 
+    - Proteger esta rota no back-end: verificar JWT com role 'admin' ou 'barber'.
+    - GET /api/dashboard/stats → { totalToday, totalWeek, totalRevenue, totalClients }
+    - GET /api/appointments?date={today}&barberId={id} → appointments[]
+-->
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title data-i18n="page.title.dashboard">Dashboard — BarberPro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <link src="logobarb.png" type="icon">
+</head>
+<body>
+
+<!--
+  SEÇÃO 2: OVERLAY SIDEBAR MOBILE
+-->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!--
+  SEÇÃO 3: LAYOUT PRINCIPAL
+-->
+<div class="app-layout">
+
+  <!-- ==================== SIDEBAR ADMIN ==================== -->
+  <aside class="sidebar" id="mainSidebar" role="navigation" aria-label="Menu administrativo">
+
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark">B</div>
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-name">BarberPro</div>
+        <div class="sidebar-brand-tagline">Admin Panel</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+
+      <div class="nav-section-label" data-i18n="nav.section.management">Gestão</div>
+
+      <a href="dashboard.html" class="nav-item active" data-page="dashboard">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.dashboard">Dashboard</span>
+      </a>
+
+      <a href="#" class="nav-item" onclick="showSection('todaySection')">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.today">Agenda do Dia</span>
+        <span class="nav-badge" id="todayBadge">0</span>
+      </a>
+
+      <a href="#" class="nav-item" onclick="showSection('allAppointmentsSection')">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.allAppointments">Todos Agendamentos</span>
+      </a>
+
+      <a href="#" class="nav-item" onclick="showSection('clientsSection')">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.clients">Clientes</span>
+      </a>
+
+      <div class="nav-section-label" data-i18n="nav.section.tools">Ferramentas</div>
+
+      <a href="#" class="nav-item" onclick="exportData()">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.export">Exportar Dados</span>
+      </a>
+
+      <a href="https://wa.me/554488317870" class="nav-item" onclick="openWhatsAppBroadcast() " target="_blank">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.whatsapp">WhatsApp</span>
+      </a>
+
+      <div class="nav-section-label" data-i18n="nav.section.navigate">Navegar</div>
+
+      <a href="login.html" class="nav-item">
+        <span class="nav-icon">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.clientArea">Área do Cliente</span>
+      </a>
+
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="sidebar-user" onclick="window.location='login.html'">
+        <div class="user-avatar" id="sidebarAvatarInitials">--</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarUserName">Admin</div>
+          <div class="user-role" data-i18n="user.role.admin">Administrador</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(200,184,136,0.40)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+    </div>
+
+  </aside>
+  <!-- ==================== /SIDEBAR ==================== -->
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <div class="main-content">
+
+    <!--
+      SEÇÃO 4: HEADER DO DASHBOARD
+      INTEGRAÇÃO BACK-END: Nenhuma específica além do nome do admin.
+    -->
+    <header class="top-header" role="banner">
+      <div class="header-left">
+        <button class="menu-toggle btn-ghost btn" id="menuToggleBtn" onclick="toggleSidebar()" aria-label="Menu">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+        <div>
+          <h1 class="header-page-title" data-i18n="dashboard.heading">Painel de Gestão</h1>
+          <nav class="header-breadcrumb" aria-label="Breadcrumb">
+            <span>BarberPro</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <span data-i18n="nav.dashboard">Dashboard</span>
+          </nav>
+        </div>
+      </div>
+
+      <div class="header-controls">
+        <!-- Data atual -->
+        <div style="font-size: 13px; color: var(--text-muted); font-family: var(--font-mono);" id="currentDateHeader"></div>
+
+        <!-- Selector de idioma -->
+        <div class="lang-selector" id="langSelector">
+          <button class="lang-btn" id="langBtn" onclick="toggleLangDropdown()" aria-label="Idioma">
+            <span class="lang-flag" id="currentFlag">🇧🇷</span>
+            <span id="currentLangLabel">PT</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="lang-dropdown" id="langDropdown" role="listbox">
+            <div class="lang-option selected" role="option" data-lang="pt" onclick="setLanguage('pt')"><span class="lang-flag">🇧🇷</span><span>Português</span></div>
+            <div class="lang-option" role="option" data-lang="en" onclick="setLanguage('en')"><span class="lang-flag">🇺🇸</span><span>English</span></div>
+            <div class="lang-option" role="option" data-lang="es" onclick="setLanguage('es')"><span class="lang-flag">🇪🇸</span><span>Español</span></div>
+          </div>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" role="switch" aria-checked="false" aria-label="Alternar tema">
+          <div class="theme-toggle-thumb" id="themeThumb"><span id="themeIcon">☀️</span></div>
+        </button>
+
+        <!-- Botão novo agendamento manual -->
+        <button class="btn btn-primary btn-sm" onclick="openManualBookingModal()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span data-i18n="btn.newAppointment">Novo Agendamento</span>
+        </button>
+      </div>
+    </header>
+
+    <!--
+      SEÇÃO 5: CONTEÚDO PRINCIPAL DO DASHBOARD
+    -->
+    <main class="page-content" role="main">
+
+      <!--
+        SUBSEÇÃO 5.1: CARDS DE ESTATÍSTICAS
+        INTEGRAÇÃO BACK-END: GET /api/dashboard/stats
+        Resposta: { totalToday, totalWeek, totalMonth, revenue, clients, conversionRate }
+      -->
+      <div class="dashboard-stats" role="region" aria-label="Estatísticas do negócio">
+
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stats.today">Agendamentos Hoje</div>
+          <div class="stat-value" id="statToday">—</div>
+          <div class="stat-delta" id="statTodayDelta">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            <span data-i18n="stats.vsYesterday">vs ontem</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stats.week">Esta Semana</div>
+          <div class="stat-value" id="statWeek">—</div>
+          <div class="stat-delta" id="statWeekDelta">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            <span data-i18n="stats.vsLastWeek">vs semana passada</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stats.month">Este Mês</div>
+          <div class="stat-value" id="statMonth">—</div>
+          <div class="stat-delta">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            <span data-i18n="stats.vsLastMonth">vs mês passado</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stats.revenue">Receita Est. (mês)</div>
+          <div class="stat-value" id="statRevenue" style="font-size: 26px;">—</div>
+          <div class="stat-delta">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            <span data-i18n="stats.vsLastRevenue">vs mês anterior</span>
+          </div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label" data-i18n="stats.clients">Clientes Cadastrados</div>
+          <div class="stat-value" id="statClients">—</div>
+          <div class="stat-delta">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>
+            <span data-i18n="stats.newThisMonth">novos este mês</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!--
+        SUBSEÇÃO 5.2: AGENDA DO DIA — CARDS DETALHADOS
+        Exibe EXATAMENTE: Nome do cliente, Dia, Horário e Serviço (Cabelo, Barba, Sobrancelha).
+        INTEGRAÇÃO BACK-END: GET /api/appointments?date={YYYY-MM-DD}&barberId={id}
+        Cada objeto: { id, clientName, clientPhone, date, time, services[], status, notes }
+      -->
+      <section id="todaySection" role="region" aria-labelledby="todaySectionTitle">
+        <div class="flex items-center justify-between mb-md" style="flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 id="todaySectionTitle" style="font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text-primary);" data-i18n="dashboard.todayTitle">Agenda de Hoje</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 3px;" id="todayDateSubtitle"></p>
+          </div>
+          <div class="flex gap-sm" style="flex-wrap: wrap;">
+            <button class="btn btn-secondary btn-sm" onclick="refreshDashboardData()">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+              <span data-i18n="btn.refresh">Atualizar</span>
+            </button>
+            <button class="btn btn-whatsapp btn-sm" onclick="sendBulkWhatsApp()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+              <span data-i18n="btn.notifyAll">Notificar Todos</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Cards de agendamento do dia -->
+        <!-- 
+          Estrutura renderizada dinamicamente pelo renderTodayCards() em script.js
+          Cada card contém EXATAMENTE: Nome, Dia, Horário e Serviço
+        -->
+        <div id="todayCardsList" class="appointments-list" role="list" aria-live="polite" aria-label="Agendamentos de hoje">
+          <!-- Skeleton loading state -->
+          <div class="appointment-card" aria-hidden="true">
+            <div class="skeleton" style="width: 58px; height: 54px; border-radius: 8px;"></div>
+            <div class="appt-divider"></div>
+            <div style="flex: 1;">
+              <div class="skeleton" style="width: 60%; height: 16px; margin-bottom: 8px;"></div>
+              <div class="skeleton" style="width: 40%; height: 12px;"></div>
+            </div>
+          </div>
+          <div class="appointment-card" aria-hidden="true">
+            <div class="skeleton" style="width: 58px; height: 54px; border-radius: 8px;"></div>
+            <div class="appt-divider"></div>
+            <div style="flex: 1;">
+              <div class="skeleton" style="width: 70%; height: 16px; margin-bottom: 8px;"></div>
+              <div class="skeleton" style="width: 35%; height: 12px;"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div style="height: 32px;"></div>
+
+      <!--
+        SUBSEÇÃO 5.3: TABELA COMPLETA DE AGENDAMENTOS
+        Visão gerencial com filtros, busca e ações em massa.
+        INTEGRAÇÃO BACK-END: GET /api/appointments?page={n}&limit={n}&status={}&search={query}
+        Suporte a paginação server-side.
+      -->
+      <section id="allAppointmentsSection" aria-labelledby="allApptsSectionTitle">
+
+        <div class="appointments-table-wrapper">
+
+          <div class="table-header" style="flex-wrap: wrap; gap: 12px;">
+            <h2 id="allApptsSectionTitle" class="table-title" data-i18n="dashboard.allAppointmentsTitle">Todos os Agendamentos</h2>
+            <div class="flex gap-sm items-center" style="flex-wrap: wrap;">
+              <!-- Busca -->
+              <div style="position: relative;">
+                <svg style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: var(--text-muted);" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                <input
+                  type="search"
+                  id="appointmentSearch"
+                  class="form-input"
+                  style="padding-left: 34px; height: 36px; width: 200px;"
+                  placeholder="Buscar cliente..."
+                  oninput="filterAppointmentsTable(this.value)"
+                  data-i18n-placeholder="dashboard.searchPlaceholder"
+                />
+              </div>
+
+              <!-- Filtro de status -->
+              <select
+                id="statusFilter"
+                class="form-input"
+                style="height: 36px; width: 150px; cursor: pointer;"
+                onchange="filterAppointmentsByStatus(this.value)"
+              >
+                <option value="all" data-i18n="filter.all">Todos</option>
+                <option value="confirmed" data-i18n="filter.confirmed">Confirmados</option>
+                <option value="pending" data-i18n="filter.pending">Pendentes</option>
+                <option value="cancelled" data-i18n="filter.cancelled">Cancelados</option>
+              </select>
+
+              <!-- Filtro de data -->
+              <input
+                type="date"
+                id="dateFilter"
+                class="form-input"
+                style="height: 36px; width: 160px;"
+                onchange="filterAppointmentsByDate(this.value)"
+              />
+
+              <!-- Botão exportar -->
+              <button class="btn btn-secondary btn-sm" onclick="exportData()">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 
+            Tabela de Agendamentos — colunas: Nome, Dia, Horário, Serviço, Status, Ações.
+            Contém EXATAMENTE: Nome do cliente, Dia, Horário e Serviço conforme spec.
+          -->
+          <div style="overflow-x: auto;">
+            <table class="appointments-table" role="grid" aria-label="Tabela de agendamentos">
+              <thead>
+                <tr>
+                  <th scope="col" data-i18n="table.col.client">Cliente</th>
+                  <th scope="col" data-i18n="table.col.day">Dia</th>
+                  <th scope="col" data-i18n="table.col.time">Horário</th>
+                  <th scope="col" data-i18n="table.col.service">Serviço</th>
+                  <th scope="col" data-i18n="table.col.status">Status</th>
+                  <th scope="col" data-i18n="table.col.contact">Contato</th>
+                  <th scope="col" data-i18n="table.col.actions">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="appointmentsTableBody">
+                <!-- Linhas preenchidas por renderAppointmentsTable() no script.js -->
+                <!-- Estrutura de referência para cada linha:
+                  <tr data-appointment-id="{id}" data-status="{status}">
+                    <td>
+                      <div class="client-cell">
+                        <div class="client-avatar-sm">{initials}</div>
+                        <div>
+                          <div style="font-weight:600;">{clientName}</div>
+                          <div style="font-size:11px;color:var(--text-muted);">{clientPhone}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="font-family:var(--font-mono);font-size:13px;">{DD/MM/YYYY}</td>
+                    <td style="font-family:var(--font-mono);font-size:13px;font-weight:600;color:var(--accent-gold);">{HH:MM}</td>
+                    <td>
+                      {services[].map(s => '<span class="service-tag">{s}</span>').join('')}
+                    </td>
+                    <td><span class="status-badge {status}">{statusLabel}</span></td>
+                    <td>
+                      <button class="btn btn-whatsapp btn-sm btn-icon" onclick="sendWhatsApp('{phone}','{name}','{date}','{time}','{services}')">
+                        WA
+                      </button>
+                    </td>
+                    <td>
+                      <div class="flex gap-sm">
+                        <button class="btn btn-secondary btn-sm" onclick="adminEditAppointment('{id}')">Editar</button>
+                        <button class="btn btn-danger btn-sm" onclick="adminCancelAppointment('{id}')">Cancelar</button>
+                      </div>
+                    </td>
+                  </tr>
+                -->
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Paginação -->
+          <div id="paginationControls" style="display: flex; align-items: center; justify-content: space-between; padding: 12px 24px; border-top: 1px solid var(--border-primary); flex-wrap: wrap; gap: 12px;">
+            <div style="font-size: 13px; color: var(--text-muted);" id="paginationInfo">
+              <!-- Ex: "Exibindo 1–10 de 47 registros" -->
+            </div>
+            <div class="flex gap-sm" id="paginationButtons">
+              <!-- Botões de página gerados dinamicamente -->
+            </div>
+          </div>
+
+        </div>
+      </section>
+
+      <div style="height: 32px;"></div>
+
+      <!--
+        SUBSEÇÃO 5.4: SEÇÃO DE CLIENTES
+        Lista simplificada de clientes cadastrados.
+        INTEGRAÇÃO BACK-END: GET /api/clients?page={n}&search={query}
+      -->
+      <section id="clientsSection" aria-labelledby="clientsSectionTitle">
+
+        <div class="flex items-center justify-between mb-md" style="flex-wrap: wrap; gap: 12px;">
+          <h2 id="clientsSectionTitle" style="font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text-primary);" data-i18n="dashboard.clientsTitle">Clientes</h2>
+          <button class="btn btn-primary btn-sm" onclick="exportClientList()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span data-i18n="btn.exportClients">Exportar Lista</span>
+          </button>
+        </div>
+
+        <div class="appointments-table-wrapper">
+          <div style="overflow-x: auto;">
+            <table class="appointments-table" role="grid" aria-label="Lista de clientes">
+              <thead>
+                <tr>
+                  <th scope="col" data-i18n="table.col.client">Cliente</th>
+                  <th scope="col" data-i18n="table.col.phone">Telefone</th>
+                  <th scope="col" data-i18n="table.col.totalVisits">Visitas</th>
+                  <th scope="col" data-i18n="table.col.lastVisit">Última Visita</th>
+                  <th scope="col" data-i18n="table.col.actions">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="clientsTableBody">
+                <!-- Populado por renderClientsTable() no script.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </section>
+
+    </main>
+
+    <!--
+      SEÇÃO 6: RODAPÉ ZYNTEK
+    -->
+    <footer class="app-footer" role="contentinfo">
+      <div class="footer-zyntek">
+        <span>Desenvolvido por</span>
+        <strong>Zyntek</strong>
+        <span class="footer-zyntek-badge">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Official
+        </span>
+      </div>
+      <nav class="footer-links" aria-label="Links do rodapé">
+        <a href="#" class="footer-link" data-i18n="footer.privacy">Privacidade</a>
+        <a href="#" class="footer-link" data-i18n="footer.terms">Termos</a>
+        <a href="#" class="footer-link" data-i18n="footer.support">Suporte</a>
+      </nav>
+    </footer>
+
+  </div>
+  <!-- ==================== /MAIN CONTENT ==================== -->
+
+</div>
+
+<!--
+  SEÇÃO 7: MODAL DE AGENDAMENTO MANUAL (ADMIN)
+  Permite ao admin/barbeiro criar agendamentos manualmente.
+  INTEGRAÇÃO BACK-END: POST /api/appointments com { clientName, clientPhone, date, time, services[], createdByAdmin: true }
+-->
+<div class="modal-overlay" id="manualBookingModal" role="dialog" aria-modal="true" aria-labelledby="manualBookingTitle" tabindex="-1">
+  <div class="modal-box" style="max-width: 560px;">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="manualBookingTitle" data-i18n="modal.adminBook.title">Novo Agendamento Manual</h2>
+        <p class="modal-subtitle" data-i18n="modal.adminBook.subtitle">Criar agendamento diretamente pelo painel</p>
+      </div>
+      <button class="modal-close" onclick="closeManualBookingModal()" aria-label="Fechar">&#10005;</button>
+    </div>
+    <div class="modal-body">
+
+      <div class="form-group">
+        <label class="form-label" for="adminClientName" data-i18n="modal.book.clientName">Nome do Cliente</label>
+        <input type="text" id="adminClientName" class="form-input" placeholder="Nome completo do cliente" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="adminClientPhone" data-i18n="modal.book.clientPhone">Telefone / WhatsApp</label>
+        <input type="tel" id="adminClientPhone" class="form-input" placeholder="(44) 99999-9999" oninput="maskPhoneInput(this)" />
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+        <div class="form-group">
+          <label class="form-label" for="adminBookDate" data-i18n="modal.book.date">Data</label>
+          <input type="date" id="adminBookDate" class="form-input" onchange="loadAdminSlots()" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="adminBookTime" data-i18n="modal.book.time">Horário</label>
+          <select id="adminBookTime" class="form-input">
+            <option value="" data-i18n="modal.book.selectTime">Selecione o horário</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" data-i18n="modal.book.services">Serviços</label>
+        <div class="service-options">
+          <div class="service-option">
+            <input type="checkbox" id="adminSvcCabelo" value="cabelo" />
+            <label class="service-option-label" for="adminSvcCabelo">
+              <span class="service-option-icon">💈</span>
+              <span class="service-option-name" data-i18n="service.hair">Cabelo</span>
+            </label>
+          </div>
+          <div class="service-option">
+            <input type="checkbox" id="adminSvcBarba" value="barba" />
+            <label class="service-option-label" for="adminSvcBarba">
+              <span class="service-option-icon">🪒</span>
+              <span class="service-option-name" data-i18n="service.beard">Barba</span>
+            </label>
+          </div>
+          <div class="service-option">
+            <input type="checkbox" id="adminSvcSobrancelha" value="sobrancelha" />
+            <label class="service-option-label" for="adminSvcSobrancelha">
+              <span class="service-option-icon">✨</span>
+              <span class="service-option-name" data-i18n="service.eyebrow">Sobrancelha</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="adminNotes" data-i18n="modal.book.notes">Observações</label>
+        <input type="text" id="adminNotes" class="form-input" placeholder="Notas internas sobre o agendamento" />
+      </div>
+
+      <div id="adminBookingErrorMsg" style="display: none; color: #DC3C3C; font-size: 13px; margin-top: 8px; padding: 10px 14px; background: rgba(220,60,60,0.08); border-radius: 8px;" role="alert"></div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeManualBookingModal()" data-i18n="btn.cancel">Cancelar</button>
+      <button class="btn btn-whatsapp btn-sm" onclick="adminBookAndNotify()" style="margin-right: auto;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span data-i18n="btn.bookAndNotify">Agendar + WA</span>
+      </button>
+      <button class="btn btn-primary" onclick="saveManualBooking()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg>
+        <span data-i18n="btn.confirm">Confirmar</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer" aria-live="polite" role="status"></div>
+
+<!--
+  SEÇÃO 8: SCRIPTS DO DASHBOARD
+  Inicializa dados específicos do painel administrativo.
+-->
+<script src="script.js"></script>
+<script>
+/* ------------------------------------------------------------
+   DASHBOARD CONTROLLER
+   Inicializa o painel, carrega dados e gerencia ações administrativas.
+   INTEGRAÇÃO BACK-END: Todas as funções marcadas com comentários para substituição.
+   ------------------------------------------------------------ */
+
+/* --- Inicialização do Dashboard --- */
+document.addEventListener('DOMContentLoaded', function () {
+  initDashboard();
+});
+
+function initDashboard() {
+  // Data atual no header
+  const now = new Date();
+  const dateStr = now.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const el = document.getElementById('currentDateHeader');
+  if (el) el.textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+
+  const subEl = document.getElementById('todayDateSubtitle');
+  if (subEl) subEl.textContent = dateStr.charAt(0).toUpperCase() + dateStr.slice(1);
+
+  // Filtro de data padrão = hoje
+  const dateInput = document.getElementById('dateFilter');
+  if (dateInput) {
+    const pad = n => String(n).padStart(2,'0');
+    dateInput.value = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  }
+
+  // Valor mínimo do campo de data no modal
+  const adminDateInput = document.getElementById('adminBookDate');
+  if (adminDateInput) {
+    const pad = n => String(n).padStart(2,'0');
+    adminDateInput.min = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}`;
+  }
+
+  // Carrega dados (simulado — substituir por fetch)
+  loadDashboardStats();
+  renderTodayCards();
+  renderAppointmentsTable();
+  renderClientsTable();
+}
+
+/* --- Carrega estatísticas do dashboard ---
+   INTEGRAÇÃO BACK-END:
+   const res = await fetch('/api/dashboard/stats', { headers: { Authorization: 'Bearer ' + localStorage.getItem('authToken') } });
+   const stats = await res.json();
+   populateStats(stats);
+*/
+function loadDashboardStats() {
+  // Simulação — remover em produção
+  const mockStats = { today: 8, week: 42, month: 164, revenue: 'R$ 8.200', clients: 312 };
+  setTimeout(() => {
+    document.getElementById('statToday').textContent   = mockStats.today;
+    document.getElementById('statWeek').textContent    = mockStats.week;
+    document.getElementById('statMonth').textContent   = mockStats.month;
+    document.getElementById('statRevenue').textContent = mockStats.revenue;
+    document.getElementById('statClients').textContent = mockStats.clients;
+    const badge = document.getElementById('todayBadge');
+    if (badge) badge.textContent = mockStats.today;
+  }, 600);
+}
+
+/* --- Renderiza cards da agenda do dia ---
+   INTEGRAÇÃO BACK-END: GET /api/appointments?date={today}&status=confirmed
+*/
+function renderTodayCards() {
+  const container = document.getElementById('todayCardsList');
+  if (!container) return;
+
+  // Dados simulados — remover em produção
+  const today = new Date();
+  const dayStr = today.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','').toUpperCase();
+  const dateStr = today.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+
+  const mockAppointments = window.appointmentsStore ? window.appointmentsStore : [];
+  // Complementa com dados de demo se store vazio
+  const demoData = [
+    { id: 'd1', clientName: 'Carlos Mendes',   clientPhone: '44999990001', date: dateStr, day: dayStr, time: '09:00', services: ['Cabelo', 'Barba'], status: 'confirmed', notes: '' },
+    { id: 'd2', clientName: 'Rafael Oliveira', clientPhone: '44999990002', date: dateStr, day: dayStr, time: '09:30', services: ['Cabelo'], status: 'confirmed', notes: '' },
+    { id: 'd3', clientName: 'Bruno Lima',      clientPhone: '44999990003', date: dateStr, day: dayStr, time: '10:00', services: ['Barba', 'Sobrancelha'], status: 'confirmed', notes: 'Prefere barba mais curta' },
+    { id: 'd4', clientName: 'Lucas Pereira',   clientPhone: '44999990004', date: dateStr, day: dayStr, time: '10:30', services: ['Cabelo'], status: 'pending', notes: '' },
+    { id: 'd5', clientName: 'Felipe Costa',    clientPhone: '44999990005', date: dateStr, day: dayStr, time: '11:00', services: ['Cabelo', 'Barba', 'Sobrancelha'], status: 'confirmed', notes: '' },
+    { id: 'd6', clientName: 'André Ribeiro',   clientPhone: '44999990006', date: dateStr, day: dayStr, time: '14:00', services: ['Barba'], status: 'confirmed', notes: '' },
+    { id: 'd7', clientName: 'Thiago Santos',   clientPhone: '44999990007', date: dateStr, day: dayStr, time: '14:30', services: ['Cabelo'], status: 'confirmed', notes: '' },
+    { id: 'd8', clientName: 'Marcos Alves',    clientPhone: '44999990008', date: dateStr, day: dayStr, time: '15:00', services: ['Cabelo', 'Barba'], status: 'confirmed', notes: '' },
+  ];
+
+  const allData = [...mockAppointments.filter(a => a.date === dateStr), ...demoData];
+
+  if (allData.length === 0) {
+    container.innerHTML = `<div class="card"><div class="empty-state"><div class="empty-state-icon">📅</div><div class="empty-state-title">Nenhum agendamento hoje</div><div class="empty-state-desc">A agenda de hoje está vazia.</div></div></div>`;
+    return;
+  }
+
+  const serviceIconMap = { 'Cabelo': '💈', 'Barba': '🪒', 'Sobrancelha': '✨', 'cabelo': '💈', 'barba': '🪒', 'sobrancelha': '✨' };
+  const statusLabels = { confirmed: 'Confirmado', pending: 'Pendente', cancelled: 'Cancelado' };
+
+  container.innerHTML = allData.map(appt => `
+    <article class="appointment-card" role="listitem" data-appointment-id="${appt.id}">
+      <div class="appt-time-block">
+        <div class="appt-time">${appt.time}</div>
+        <div class="appt-day">${appt.day}</div>
+      </div>
+      <div class="appt-divider"></div>
+      <div class="appt-info flex-1">
+        <div class="appt-client">${escapeHtml(appt.clientName)}</div>
+        <div class="appt-services">
+          ${appt.services.map(s => `<span class="service-tag">${serviceIconMap[s]||''} ${s}</span>`).join('')}
+        </div>
+        ${appt.notes ? `<div style="font-size:11px;color:var(--text-muted);margin-top:4px;">📝 ${escapeHtml(appt.notes)}</div>` : ''}
+      </div>
+      <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);text-align:center;flex-shrink:0;">
+        <div>${appt.date}</div>
+        <span class="status-badge ${appt.status}" style="margin-top:4px;">${statusLabels[appt.status]||appt.status}</span>
+      </div>
+      <div class="appt-actions" style="flex-shrink:0;">
+        <button class="btn btn-whatsapp btn-sm btn-icon" onclick="sendWhatsApp('${appt.clientPhone}','${escapeHtml(appt.clientName)}','${appt.date}','${appt.time}','${appt.services.join(', ')}')" title="Enviar WhatsApp">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </button>
+        <button class="btn btn-secondary btn-sm" onclick="adminEditAppointment('${appt.id}')" data-i18n="btn.edit">Editar</button>
+        <button class="btn btn-danger btn-sm" onclick="adminCancelAppointment('${appt.id}')" data-i18n="btn.cancel">Cancelar</button>
+      </div>
+    </article>
+  `).join('');
+}
+
+/* --- Renderiza tabela completa de agendamentos ---
+   INTEGRAÇÃO BACK-END: GET /api/appointments?page=1&limit=20
+*/
+function renderAppointmentsTable(filter = {}) {
+  const tbody = document.getElementById('appointmentsTableBody');
+  if (!tbody) return;
+
+  const serviceIconMap = { 'Cabelo': '💈', 'Barba': '🪒', 'Sobrancelha': '✨', 'cabelo': '💈', 'barba': '🪒', 'sobrancelha': '✨' };
+  const statusLabels = { confirmed: 'Confirmado', pending: 'Pendente', cancelled: 'Cancelado' };
+
+  // Dado simulado — substituir por fetch em produção
+  const allAppts = window.appointmentsStore || [];
+  const extraDemo = [
+    { id: 'e1', clientName: 'Gustavo Neves',   clientPhone: '44988880001', date: '07/06/2026', day: 'DOM', time: '09:00', services: ['Cabelo', 'Barba'], status: 'confirmed' },
+    { id: 'e2', clientName: 'Henrique Moura',  clientPhone: '44988880002', date: '08/06/2026', day: 'SEG', time: '09:30', services: ['Cabelo'], status: 'pending' },
+    { id: 'e3', clientName: 'Diego Martins',   clientPhone: '44988880003', date: '09/06/2026', day: 'TER', time: '10:00', services: ['Barba'], status: 'confirmed' },
+    { id: 'e4', clientName: 'Victor Souza',    clientPhone: '44988880004', date: '09/06/2026', day: 'TER', time: '11:00', services: ['Cabelo', 'Sobrancelha'], status: 'cancelled' },
+    { id: 'e5', clientName: 'Rodrigo Ferreira',clientPhone: '44988880005', date: '10/06/2026', day: 'QUA', time: '14:00', services: ['Cabelo', 'Barba', 'Sobrancelha'], status: 'confirmed' },
+  ];
+  const data = [...allAppts, ...extraDemo];
+
+  if (data.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);" data-i18n="table.empty">Nenhum agendamento encontrado</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = data.map(appt => {
+    const initials = appt.clientName.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase();
+    return `
+      <tr data-appointment-id="${appt.id}" data-status="${appt.status}" data-client="${appt.clientName.toLowerCase()}">
+        <td>
+          <div class="client-cell">
+            <div class="client-avatar-sm">${initials}</div>
+            <div>
+              <div style="font-weight:600;">${escapeHtml(appt.clientName)}</div>
+              <div style="font-size:11px;color:var(--text-muted);">${appt.clientPhone||'—'}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-family:var(--font-mono);font-size:13px;">${appt.date}</td>
+        <td style="font-family:var(--font-mono);font-size:14px;font-weight:600;color:var(--accent-gold);">${appt.time}</td>
+        <td>${appt.services.map(s=>`<span class="service-tag">${serviceIconMap[s]||''} ${s}</span>`).join('')}</td>
+        <td><span class="status-badge ${appt.status}">${statusLabels[appt.status]||appt.status}</span></td>
+        <td>
+          <button class="btn btn-whatsapp btn-sm" onclick="sendWhatsApp('${appt.clientPhone}','${escapeHtml(appt.clientName)}','${appt.date}','${appt.time}','${appt.services.join(', ')}')" title="WhatsApp">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            WA
+          </button>
+        </td>
+        <td>
+          <div class="flex gap-sm">
+            <button class="btn btn-secondary btn-sm" onclick="adminEditAppointment('${appt.id}')">Editar</button>
+            <button class="btn btn-danger btn-sm" onclick="adminCancelAppointment('${appt.id}')">Cancelar</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  updatePaginationInfo(data.length);
+}
+
+/* --- Renderiza tabela de clientes ---
+   INTEGRAÇÃO BACK-END: GET /api/clients?page=1&limit=20
+*/
+function renderClientsTable() {
+  const tbody = document.getElementById('clientsTableBody');
+  if (!tbody) return;
+
+  // Dados simulados
+  const clients = [
+    { id: 'c1', name: 'Carlos Mendes',    phone: '44999990001', visits: 12, lastVisit: '06/06/2026' },
+    { id: 'c2', name: 'Rafael Oliveira',  phone: '44999990002', visits: 7,  lastVisit: '03/06/2026' },
+    { id: 'c3', name: 'Bruno Lima',       phone: '44999990003', visits: 23, lastVisit: '06/06/2026' },
+    { id: 'c4', name: 'Lucas Pereira',    phone: '44999990004', visits: 4,  lastVisit: '01/06/2026' },
+    { id: 'c5', name: 'Felipe Costa',     phone: '44999990005', visits: 18, lastVisit: '06/06/2026' },
+    { id: 'c6', name: 'Gustavo Neves',    phone: '44988880001', visits: 9,  lastVisit: '04/06/2026' },
+    { id: 'c7', name: 'Henrique Moura',   phone: '44988880002', visits: 2,  lastVisit: '08/06/2026' },
+  ];
+
+  tbody.innerHTML = clients.map(client => {
+    const initials = client.name.split(' ').slice(0,2).map(n=>n[0]).join('').toUpperCase();
+    return `
+      <tr>
+        <td>
+          <div class="client-cell">
+            <div class="client-avatar-sm">${initials}</div>
+            <div>
+              <div style="font-weight:600;">${escapeHtml(client.name)}</div>
+            </div>
+          </div>
+        </td>
+        <td style="font-family:var(--font-mono);font-size:13px;">${client.phone}</td>
+        <td>
+          <span style="font-family:var(--font-mono);font-size:14px;font-weight:700;color:var(--accent-gold);">${client.visits}</span>
+          <span style="font-size:11px;color:var(--text-muted);margin-left:4px;">visitas</span>
+        </td>
+        <td style="font-family:var(--font-mono);font-size:13px;">${client.lastVisit}</td>
+        <td>
+          <div class="flex gap-sm">
+            <button class="btn btn-whatsapp btn-sm btn-icon" onclick="sendWhatsApp('${client.phone}','${escapeHtml(client.name)}','','','','Olá!')" title="WhatsApp">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </button>
+            <button class="btn btn-secondary btn-sm" onclick="showClientHistory('${client.id}')">Histórico</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+/* --- Filtros da tabela de agendamentos --- */
+function filterAppointmentsTable(query) {
+  const rows = document.querySelectorAll('#appointmentsTableBody tr[data-client]');
+  rows.forEach(row => {
+    const match = row.dataset.client.includes(query.toLowerCase());
+    row.style.display = match ? '' : 'none';
+  });
+}
+
+function filterAppointmentsByStatus(status) {
+  const rows = document.querySelectorAll('#appointmentsTableBody tr[data-status]');
+  rows.forEach(row => {
+    const match = status === 'all' || row.dataset.status === status;
+    row.style.display = match ? '' : 'none';
+  });
+}
+
+function filterAppointmentsByDate(date) {
+  // INTEGRAÇÃO BACK-END: nova requisição GET /api/appointments?date={date}
+  showToast('Filtrando por data: ' + date, 'info');
+}
+
+/* --- Paginação --- */
+function updatePaginationInfo(total) {
+  const info = document.getElementById('paginationInfo');
+  const btns = document.getElementById('paginationButtons');
+  if (info) info.textContent = `Exibindo 1–${Math.min(20, total)} de ${total} registros`;
+  if (btns) btns.innerHTML = `
+    <button class="btn btn-secondary btn-sm" disabled>‹ Anterior</button>
+    <button class="btn btn-primary btn-sm">1</button>
+    <button class="btn btn-secondary btn-sm" ${total <= 20 ? 'disabled' : ''}>Próxima ›</button>
+  `;
+}
+
+/* --- WhatsApp Integration ---
+   Gera link wa.me com mensagem pré-formatada. Abre nova aba.
+   INTEGRAÇÃO BACK-END: Opcionalmente, registrar o envio via POST /api/whatsapp/log
+*/
+function sendWhatsApp(phone, name, date, time, services, customMsg) {
+  const cleanPhone = phone.replace(/\D/g, '');
+  const ddi = cleanPhone.startsWith('55') ? '' : '55';
+  const number = ddi + cleanPhone;
+  const msg = customMsg || `Olá, ${name}! 👋\n\nLembramos seu agendamento na *BarberPro*:\n📅 *Data:* ${date}\n⏰ *Horário:* ${time}\n✂️ *Serviço:* ${services}\n\nAté logo! 💈`;
+  const encodedMsg = encodeURIComponent(msg);
+  window.open(`https://wa.me/${number}?text=${encodedMsg}`, '_blank', 'noopener,noreferrer');
+  showToast('Abrindo WhatsApp...', 'info');
+  // INTEGRAÇÃO BACK-END: await fetch('/api/whatsapp/log', { method: 'POST', body: JSON.stringify({ phone, name, date, time, services }) });
+}
+
+function sendBulkWhatsApp() {
+  showToast('Função de notificação em massa via API do WhatsApp Business em integração.', 'info');
+  // INTEGRAÇÃO BACK-END: POST /api/whatsapp/bulk { appointmentIds: [], message: '' }
+}
+
+function openWhatsAppBroadcast() {
+  showToast('Módulo de broadcast disponível via WhatsApp Business API.', 'info');
+}
+
+/* --- Ações administrativas --- */
+function adminEditAppointment(id) {
+  showToast(`Editando agendamento #${id}...`, 'info');
+  // INTEGRAÇÃO BACK-END: GET /api/appointments/{id} → popular modal de edição
+}
+
+function adminCancelAppointment(id) {
+  if (confirm('Cancelar este agendamento?')) {
+    // INTEGRAÇÃO BACK-END: DELETE /api/appointments/{id}
+    const row  = document.querySelector(`[data-appointment-id="${id}"]`);
+    const card = document.querySelector(`article[data-appointment-id="${id}"]`);
+    if (row)  { row.querySelector('[data-status]') && (row.dataset.status = 'cancelled'); row.querySelector('.status-badge').className = 'status-badge cancelled'; row.querySelector('.status-badge').textContent = 'Cancelado'; }
+    if (card) { card.style.opacity = '0.4'; }
+    showToast('Agendamento cancelado.', 'success');
+  }
+}
+
+function showClientHistory(clientId) {
+  showToast(`Histórico do cliente #${clientId} em desenvolvimento.`, 'info');
+}
+
+function refreshDashboardData() {
+  showToast('Atualizando dados...', 'info');
+  loadDashboardStats();
+  renderTodayCards();
+  renderAppointmentsTable();
+}
+
+/* --- Modal de Agendamento Manual --- */
+function openManualBookingModal() {
+  document.getElementById('manualBookingModal').classList.add('open');
+  document.getElementById('manualBookingModal').focus();
+}
+
+function closeManualBookingModal() {
+  document.getElementById('manualBookingModal').classList.remove('open');
+}
+
+function loadAdminSlots() {
+  const date = document.getElementById('adminBookDate').value;
+  if (!date) return;
+  const d = new Date(date + 'T00:00:00');
+  const dow = d.getDay(); // 0=Dom, 6=Sab
+  const select = document.getElementById('adminBookTime');
+  select.innerHTML = '<option value="">Selecione o horário</option>';
+
+  // Regra de negócio: Seg–Sex 09-12 e 14-19 | Sáb 08-12 | Dom bloqueado
+  let slots = [];
+  if (dow === 0) {
+    select.innerHTML = '<option value="">Domingo — sem atendimento</option>';
+    return;
+  }
+  if (dow === 6) {
+    for (let h = 8; h < 12; h++) {
+      slots.push(`${String(h).padStart(2,'0')}:00`);
+      slots.push(`${String(h).padStart(2,'0')}:30`);
+    }
+  } else {
+    for (let h = 9; h < 12; h++) {
+      slots.push(`${String(h).padStart(2,'0')}:00`);
+      slots.push(`${String(h).padStart(2,'0')}:30`);
+    }
+    for (let h = 14; h < 19; h++) {
+      slots.push(`${String(h).padStart(2,'0')}:00`);
+      slots.push(`${String(h).padStart(2,'0')}:30`);
+    }
+  }
+  // INTEGRAÇÃO BACK-END: filtrar slots já ocupados via GET /api/slots?date={date}
+  slots.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t;
+    opt.textContent = t;
+    select.appendChild(opt);
+  });
+}
+
+function maskPhoneInput(input) {
+  let v = input.value.replace(/\D/g, '');
+  if (v.length > 11) v = v.slice(0, 11);
+  if (v.length > 6)      v = '(' + v.slice(0,2) + ') ' + v.slice(2,7) + '-' + v.slice(7);
+  else if (v.length > 2) v = '(' + v.slice(0,2) + ') ' + v.slice(2);
+  else if (v.length > 0) v = '(' + v;
+  input.value = v;
+}
+
+async function saveManualBooking() {
+  const name    = document.getElementById('adminClientName').value.trim();
+  const phone   = document.getElementById('adminClientPhone').value.trim();
+  const date    = document.getElementById('adminBookDate').value;
+  const time    = document.getElementById('adminBookTime').value;
+  const services = ['adminSvcCabelo','adminSvcBarba','adminSvcSobrancelha'].filter(id=>document.getElementById(id).checked).map(id=>document.getElementById(id).value);
+  const errMsg  = document.getElementById('adminBookingErrorMsg');
+
+  if (!name || !phone || !date || !time || services.length === 0) {
+    errMsg.textContent = 'Preencha todos os campos e selecione ao menos um serviço.';
+    errMsg.style.display = 'block';
+    return;
+  }
+  errMsg.style.display = 'none';
+
+  /* INTEGRAÇÃO BACK-END:
+     await fetch('/api/appointments', {
+       method: 'POST',
+       headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + localStorage.getItem('authToken') },
+       body: JSON.stringify({ clientName: name, clientPhone: phone, date, time, services, createdByAdmin: true })
+     });
+  */
+
+  // Simulação
+  const d = new Date(date + 'T00:00:00');
+  const dayShort = d.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.','').toUpperCase();
+  const dateFormatted = d.toLocaleDateString('pt-BR');
+  const serviceLabels = { cabelo: 'Cabelo', barba: 'Barba', sobrancelha: 'Sobrancelha' };
+  const appt = {
+    id: 'manual_' + Date.now(),
+    clientName: name, clientPhone: phone.replace(/\D/g,''),
+    date: dateFormatted, day: dayShort, time, services: services.map(s => serviceLabels[s] || s), status: 'confirmed', notes: ''
+  };
+
+  if (!window.appointmentsStore) window.appointmentsStore = [];
+  window.appointmentsStore.unshift(appt);
+
+  closeManualBookingModal();
+  showToast(`Agendamento de ${name} criado com sucesso!`, 'success');
+  renderTodayCards();
+  renderAppointmentsTable();
+}
+
+function adminBookAndNotify() {
+  saveManualBooking();
+  setTimeout(() => {
+    const name  = document.getElementById('adminClientName')?.value || '';
+    const phone = document.getElementById('adminClientPhone')?.value || '';
+    const date  = document.getElementById('adminBookDate')?.value || '';
+    const time  = document.getElementById('adminBookTime')?.value || '';
+    if (phone && time) sendWhatsApp(phone, name, date, time, 'Confirmado');
+  }, 500);
+}
+
+function exportData() {
+  // INTEGRAÇÃO BACK-END: GET /api/appointments/export?format=csv
+  showToast('Exportação CSV em integração com a API.', 'info');
+}
+
+function exportClientList() {
+  showToast('Exportação da lista de clientes em integração com a API.', 'info');
+}
+
+function showSection(sectionId) {
+  document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+
+</body>
+</html>

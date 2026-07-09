@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  INICIO.HTML — ZYNTEK BARBERSHOP MANAGEMENT SYSTEM
+  Página principal do cliente: agendamento dinâmico com calendário,
+  seleção de serviços e gerenciamento de agendamentos.
+  Projeto Oficial Zyntek
+  ============================================================
+-->
+<!--
+  SEÇÃO 1: CONFIGURAÇÃO DO DOCUMENTO
+  Define charset, viewport responsivo e carrega folhas de estilo.
+  INTEGRAÇÃO BACK-END: Substituir href do CSS por asset bundled (webpack/vite) em produção.
+-->
+<html lang="pt-BR" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Barbearia Premium — Agendamento Online" />
+  <title data-i18n="page.title.home">Início — Barbearia Premium</title>
+  <link rel="icon" type="image/png" href="—Pngtree—barbershop logo_7966220.png" id="logo-aba">
+
+  <!-- Fontes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- Estilos principais -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+<!--
+  SEÇÃO 2: OVERLAY E SIDEBAR MOBILE
+  Controle de menu lateral em dispositivos móveis (< 768px).
+  INTEGRAÇÃO BACK-END: Nenhuma. Puramente visual/interativo via JS.
+-->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!--
+  SEÇÃO 3: LAYOUT PRINCIPAL (SIDEBAR + CONTEÚDO)
+  Estrutura de duas colunas fixa: sidebar navegacional + área de conteúdo dinâmica.
+  INTEGRAÇÃO BACK-END: O nome do usuário e avatar são populados via GET /api/auth/me
+-->
+<div class="app-layout">
+
+  <!-- ==================== SIDEBAR ==================== -->
+  <aside class="sidebar" id="mainSidebar" role="navigation" aria-label="Menu principal">
+
+    <!-- Logo / Marca -->
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-mark" aria-hidden="true">B</div>
+      <div class="sidebar-brand">
+        <div class="sidebar-brand-name">BarberPro</div>
+        <div class="sidebar-brand-tagline">Premium</div>
+      </div>
+    </div>
+
+    <!-- Navegação principal -->
+    <nav class="sidebar-nav">
+
+      <div class="nav-section-label" data-i18n="nav.section.menu">Menu</div>
+
+      <a href="inicio.html" class="nav-item active" data-page="home">
+        <span class="nav-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <polyline points="9 22 9 12 15 12 15 22"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.home">Início</span>
+      </a>
+
+      <a href="#schedule" class="nav-item" data-page="schedule" onclick="scrollToSection('schedulingSection')">
+        <span class="nav-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.schedule">Agendar</span>
+      </a>
+
+      <a href="#my-appointments" class="nav-item" data-page="my-appointments" onclick="scrollToSection('myAppointmentsSection')">
+        <span class="nav-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.myAppointments">Meus Agendamentos</span>
+        <span class="nav-badge" id="myAppointmentsBadge">0</span>
+      </a>
+
+      <div class="nav-section-label" data-i18n="nav.section.account">Conta</div>
+
+      <a href="login.html" class="nav-item" data-page="login">
+        <span class="nav-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.profile">Perfil</span>
+      </a>
+
+      <a href="login.html" class="nav-item" data-page="dashboard">
+        <span class="nav-icon" aria-hidden="true">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+        </span>
+        <span data-i18n="nav.dashboard">Painel Admin</span>
+      </a>
+
+    </nav>
+
+    <!-- Usuário logado -->
+    <div class="sidebar-footer">
+      <div class="sidebar-user" onclick="window.location='login.html'">
+        <div class="user-avatar" id="sidebarAvatarInitials">--</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebarUserName">Carregando...</div>
+          <div class="user-role" data-i18n="user.role.client">Cliente</div>
+        </div>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(200,184,136,0.40)" stroke-width="2">
+          <polyline points="9 18 15 12 9 6"/>
+        </svg>
+      </div>
+    </div>
+
+  </aside>
+  <!-- ==================== /SIDEBAR ==================== -->
+
+  <!-- ==================== MAIN CONTENT ==================== -->
+  <div class="main-content">
+
+    <!--
+      SEÇÃO 4: HEADER SUPERIOR
+      Contém: botão de menu mobile, título da página, controles de tema e idioma.
+      INTEGRAÇÃO BACK-END: Preferências de tema/idioma via PATCH /api/users/{id}/preferences
+    -->
+    <header class="top-header" role="banner">
+
+      <div class="header-left">
+        <!-- Botão menu mobile -->
+        <button class="menu-toggle btn-ghost btn" id="menuToggleBtn" onclick="toggleSidebar()" aria-label="Abrir menu" aria-expanded="false" aria-controls="mainSidebar">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+          </svg>
+        </button>
+
+        <div>
+          <h1 class="header-page-title" data-i18n="page.heading.home">Bem-vindo</h1>
+          <nav class="header-breadcrumb" aria-label="Breadcrumb">
+            <span>BarberPro</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+            <span data-i18n="page.heading.home">Início</span>
+          </nav>
+        </div>
+      </div>
+
+      <div class="header-controls">
+
+        <!-- Seletor de idioma -->
+        <div class="lang-selector" id="langSelector">
+          <button class="lang-btn" id="langBtn" onclick="toggleLangDropdown()" aria-haspopup="listbox" aria-expanded="false" aria-label="Selecionar idioma">
+            <span class="lang-flag" id="currentFlag">🇧🇷</span>
+            <span id="currentLangLabel">PT</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="lang-dropdown" id="langDropdown" role="listbox" aria-label="Idiomas disponíveis">
+            <div class="lang-option selected" role="option" data-lang="pt" onclick="setLanguage('pt')">
+              <span class="lang-flag">🇧🇷</span>
+              <span>Português</span>
+            </div>
+            <div class="lang-option" role="option" data-lang="en" onclick="setLanguage('en')">
+              <span class="lang-flag">🇺🇸</span>
+              <span>English</span>
+            </div>
+            <div class="lang-option" role="option" data-lang="es" onclick="setLanguage('es')">
+              <span class="lang-flag">🇪🇸</span>
+              <span>Español</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Toggle dark/light mode -->
+        <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" role="switch" aria-checked="false" aria-label="Alternar modo escuro">
+          <div class="theme-toggle-thumb" id="themeThumb">
+            <span id="themeIcon">☀️</span>
+          </div>
+        </button>
+
+      </div>
+    </header>
+    <!-- ==================== /HEADER ==================== -->
+
+    <!--
+      SEÇÃO 5: CONTEÚDO DA PÁGINA — HERO E AGENDAMENTO
+      Área principal de interação do cliente.
+    -->
+    <main class="page-content" id="mainPageContent" role="main">
+
+      <!--
+        SUBSEÇÃO 5.1: HERO — SAUDAÇÃO PERSONALIZADA
+        Exibe saudação e status rápido do próximo agendamento.
+        INTEGRAÇÃO BACK-END: GET /api/appointments?clientId={id}&upcoming=true&limit=1
+      -->
+      <section class="hero-section" aria-labelledby="heroHeading">
+        <div class="flex items-center justify-between" style="flex-wrap: wrap; gap: 16px;">
+          <div>
+            <h2 id="heroHeading" style="font-family: var(--font-display); font-size: 32px; font-weight: 900; color: var(--text-primary); letter-spacing: -0.8px; line-height: 1.1;">
+              <span data-i18n="hero.greeting">Olá,</span>
+              <span id="heroUserName" style="color: var(--accent-gold);"> Visitante</span> ✂️
+            </h2>
+            <p style="color: var(--text-muted); font-size: 15px; margin-top: 6px;" data-i18n="hero.subtitle">Pronto para agendar sua próxima visita?</p>
+          </div>
+
+          <!-- Card do próximo agendamento -->
+          <div id="nextApptCard" class="card card-gold" style="min-width: 260px; max-width: 320px; display: none;">
+            <div style="font-size: 10px; font-weight: 600; letter-spacing: 2px; text-transform: uppercase; color: var(--accent-gold); margin-bottom: 8px;" data-i18n="hero.nextAppointment">Próximo Agendamento</div>
+            <div class="flex items-center gap-md">
+              <div class="appt-time-block">
+                <div class="appt-time" id="nextApptTime">--:--</div>
+                <div class="appt-day" id="nextApptDay">---</div>
+              </div>
+              <div>
+                <div style="font-size: 15px; font-weight: 600; color: var(--text-primary);" id="nextApptServices">—</div>
+                <div style="font-size: 12px; color: var(--text-muted);" data-i18n="hero.confirmed">Confirmado ✓</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div style="height: 32px;"></div>
+
+      <!--
+        SUBSEÇÃO 5.2: SEÇÃO DE AGENDAMENTO — CALENDÁRIO + SLOTS
+        Calendário mensal navegável + grade de horários disponíveis.
+        Regras de negócio:
+          • Seg–Sex: 09:00–12:00 e 14:00–19:00
+          • Sáb: 08:00–12:00
+          • Dom: bloqueado
+        INTEGRAÇÃO BACK-END: 
+          GET /api/slots?date={YYYY-MM-DD}&barberId={id} → retorna array de { time, status: 'free'|'booked' }
+          POST /api/appointments → { clientId, barberId, date, time, services[] }
+      -->
+      <section id="schedulingSection" class="card" style="padding: var(--space-xl);" aria-labelledby="scheduleHeading">
+
+        <div class="card-header">
+          <div>
+            <h2 id="scheduleHeading" class="card-title" data-i18n="schedule.title">Agendar Horário</h2>
+            <p class="card-subtitle" data-i18n="schedule.subtitle">Selecione um dia e horário disponível</p>
+          </div>
+          <div class="card-icon" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Calendário + Slots wrapper -->
+        <div class="calendar-wrapper">
+
+          <!-- Calendário mensal -->
+          <div class="calendar-panel">
+            <div class="calendar-nav" role="group" aria-label="Navegação do calendário">
+              <button class="calendar-nav-btn" id="prevMonthBtn" onclick="changeMonth(-1)" aria-label="Mês anterior">&#8249;</button>
+              <span class="calendar-month-label" id="calendarMonthLabel" aria-live="polite">Junho 2026</span>
+              <button class="calendar-nav-btn" id="nextMonthBtn" onclick="changeMonth(1)" aria-label="Próximo mês">&#8250;</button>
+            </div>
+
+            <!-- Cabeçalhos dos dias -->
+            <div class="calendar-grid" role="grid" aria-label="Calendário de dias">
+              <div class="calendar-day-header" role="columnheader" aria-label="Domingo">D</div>
+              <div class="calendar-day-header" role="columnheader" aria-label="Segunda">S</div>
+              <div class="calendar-day-header" role="columnheader" aria-label="Terça">T</div>
+              <div class="calendar-day-header" role="columnheader" aria-label="Quarta">Q</div>
+              <div class="calendar-day-header" role="columnheader" aria-label="Quinta">Q</div>
+              <div class="calendar-day-header" role="columnheader" aria-label="Sexta">S</div>
+              <div class="calendar-day-header" role="columnheader" aria-label="Sábado">S</div>
+              <!-- Dias preenchidos dinamicamente pelo script.js via renderCalendar() -->
+              <div id="calendarDaysGrid" style="display: contents;"></div>
+            </div>
+
+            <!-- Legenda -->
+            <div class="calendar-legend" role="legend" aria-label="Legenda de cores do calendário">
+              <div class="legend-item">
+                <div class="legend-dot free" aria-hidden="true"></div>
+                <span data-i18n="legend.free">Livre</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot selected" aria-hidden="true"></div>
+                <span data-i18n="legend.selected">Selecionado</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-dot booked" aria-hidden="true"></div>
+                <span data-i18n="legend.booked">Ocupado</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Painel de slots de horário -->
+          <div class="slots-panel" id="slotsPanel">
+
+            <!-- Estado inicial: nenhum dia selecionado -->
+            <div id="slotsPlaceholder" class="empty-state" style="padding: var(--space-xl) var(--space-lg);" role="status" aria-live="polite">
+              <div class="empty-state-icon" aria-hidden="true">📅</div>
+              <div class="empty-state-title" data-i18n="slots.placeholder.title">Selecione um dia</div>
+              <div class="empty-state-desc" data-i18n="slots.placeholder.desc">Clique em um dia disponível no calendário para ver os horários</div>
+            </div>
+
+            <!-- Slots preenchidos dinamicamente por renderSlots() no script.js -->
+            <div id="slotsContent" style="display: none;">
+              <div class="slots-date-label" id="slotsDateLabel">—</div>
+
+              <!-- Turno Manhã -->
+              <div id="morningPeriod">
+                <div class="slots-period-label" data-i18n="slots.morning">☀️ Manhã</div>
+                <div class="slots-grid" id="morningSlotsGrid" role="group" aria-label="Horários da manhã">
+                  <!-- Populado dinamicamente -->
+                </div>
+              </div>
+
+              <!-- Turno Tarde (visível apenas Seg–Sex) -->
+              <div id="afternoonPeriod" style="display: none;">
+                <div class="slots-period-label" data-i18n="slots.afternoon">🌤️ Tarde</div>
+                <div class="slots-grid" id="afternoonSlotsGrid" role="group" aria-label="Horários da tarde">
+                  <!-- Populado dinamicamente -->
+                </div>
+              </div>
+            </div>
+
+          </div>
+          <!-- /slots-panel -->
+
+        </div>
+        <!-- /calendar-wrapper -->
+
+      </section>
+
+      <div style="height: 32px;"></div>
+
+      <!--
+        SUBSEÇÃO 5.3: MEUS AGENDAMENTOS
+        Lista os agendamentos do cliente logado. Permite cancelar e reagendar.
+        Ao cancelar: slot volta a "livre" no estado local e API é notificada.
+        INTEGRAÇÃO BACK-END:
+          GET /api/appointments?clientId={id} → Array de appointments
+          DELETE /api/appointments/{id} → cancela e libera slot
+          PATCH /api/appointments/{id} → atualiza data/hora (reagendar)
+      -->
+      <section id="myAppointmentsSection" aria-labelledby="myApptsHeading">
+        <div class="flex items-center justify-between mb-md" style="flex-wrap: wrap; gap: 12px;">
+          <div>
+            <h2 id="myApptsHeading" style="font-family: var(--font-display); font-size: 22px; font-weight: 700; color: var(--text-primary);" data-i18n="myAppts.title">Meus Agendamentos</h2>
+            <p style="font-size: 13px; color: var(--text-muted); margin-top: 3px;" data-i18n="myAppts.subtitle">Visualize, cancele ou reagende suas visitas</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="refreshMyAppointments()" aria-label="Atualizar lista">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+            </svg>
+            <span data-i18n="btn.refresh">Atualizar</span>
+          </button>
+        </div>
+
+        <!-- Filtros por status -->
+        <div class="flex gap-sm mb-md" role="tablist" aria-label="Filtrar agendamentos" style="flex-wrap: wrap;">
+          <button class="btn btn-sm btn-primary" role="tab" aria-selected="true" data-filter="all" onclick="filterMyAppointments('all', this)" data-i18n="filter.all">Todos</button>
+          <button class="btn btn-sm btn-secondary" role="tab" aria-selected="false" data-filter="confirmed" onclick="filterMyAppointments('confirmed', this)" data-i18n="filter.confirmed">Confirmados</button>
+          <button class="btn btn-sm btn-secondary" role="tab" aria-selected="false" data-filter="cancelled" onclick="filterMyAppointments('cancelled', this)" data-i18n="filter.cancelled">Cancelados</button>
+        </div>
+
+        <!-- Lista de agendamentos — populada dinamicamente por renderMyAppointments() -->
+        <div id="myAppointmentsList" class="appointments-list" role="list" aria-live="polite" aria-label="Lista de agendamentos">
+
+          <!-- Estado vazio — mostrado quando não há agendamentos -->
+          <div id="myApptsEmpty" class="card" style="text-align: center;">
+            <div class="empty-state">
+              <div class="empty-state-icon" aria-hidden="true">🗓️</div>
+              <div class="empty-state-title" data-i18n="myAppts.empty.title">Nenhum agendamento</div>
+              <div class="empty-state-desc" data-i18n="myAppts.empty.desc">Você ainda não possui agendamentos. Use o calendário acima para marcar sua visita!</div>
+              <button class="btn btn-primary mt-md" onclick="scrollToSection('schedulingSection')">
+                <span data-i18n="myAppts.empty.cta">Agendar Agora</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Cards de agendamento preenchidos pelo script.js -->
+          <!-- Estrutura de cada card (referência para o script.js):
+            <article class="my-appt-card" role="listitem" data-appointment-id="{id}">
+              <div class="my-appt-status confirmed|pending|cancelled" aria-label="Status"></div>
+              <div class="appt-time-block">
+                <div class="appt-time">{HH:MM}</div>
+                <div class="appt-day">{DDD}</div>
+              </div>
+              <div class="appt-divider"></div>
+              <div class="appt-info flex-1">
+                <div class="appt-client">{Date full}</div>
+                <div class="appt-services">
+                  <span class="service-tag">{service}</span>
+                </div>
+              </div>
+              <div class="appt-actions">
+                <button class="btn btn-sm btn-secondary" onclick="rescheduleAppointment('{id}')">Reagendar</button>
+                <button class="btn btn-sm btn-danger" onclick="cancelAppointment('{id}')">Cancelar</button>
+              </div>
+            </article>
+          -->
+
+        </div>
+      </section>
+
+    </main>
+    <!-- ==================== /MAIN CONTENT ==================== -->
+
+    <!--
+      SEÇÃO 6: RODAPÉ — ZYNTEK
+      Exibe créditos do desenvolvimento e links institucionais.
+      INTEGRAÇÃO BACK-END: Nenhuma.
+    -->
+    <footer class="app-footer" role="contentinfo">
+      <div class="footer-zyntek">
+        <span>Desenvolvido por</span>
+        <strong>Zyntek</strong>
+        <span class="footer-zyntek-badge">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          Official
+        </span>
+      </div>
+      <nav class="footer-links" aria-label="Links do rodapé">
+        <a href="#" class="footer-link" data-i18n="footer.privacy">Privacidade</a>
+        <a href="#" class="footer-link" data-i18n="footer.terms">Termos</a>
+        <a href="#" class="footer-link" data-i18n="footer.support">Suporte</a>
+      </nav>
+    </footer>
+
+  </div>
+  <!-- ==================== /MAIN CONTENT ==================== -->
+
+</div>
+<!-- ==================== /APP LAYOUT ==================== -->
+
+<!--
+  SEÇÃO 7: MODAL DE CONFIRMAÇÃO DE AGENDAMENTO
+  Exibido após seleção de dia + horário. Coleta nome, telefone e serviços.
+  INTEGRAÇÃO BACK-END: POST /api/appointments → body: { clientId, date, time, services[], barberId }
+  Resposta esperada: 201 Created → { id, status: 'confirmed' }
+-->
+<div class="modal-overlay" id="bookingModal" role="dialog" aria-modal="true" aria-labelledby="bookingModalTitle" tabindex="-1">
+  <div class="modal-box">
+
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="bookingModalTitle" data-i18n="modal.book.title">Confirmar Agendamento</h2>
+        <p class="modal-subtitle" id="bookingModalDatetime">—</p>
+      </div>
+      <button class="modal-close" onclick="closeBookingModal()" aria-label="Fechar modal">&#10005;</button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Resumo do horário selecionado -->
+      <div class="booking-summary" aria-label="Resumo do horário selecionado">
+        <div class="booking-summary-item">
+          <div class="booking-summary-label" data-i18n="modal.book.date">Data</div>
+          <div class="booking-summary-value" id="summaryDate">—</div>
+        </div>
+        <div style="width: 1px; background: var(--border-gold); flex-shrink: 0;"></div>
+        <div class="booking-summary-item">
+          <div class="booking-summary-label" data-i18n="modal.book.time">Horário</div>
+          <div class="booking-summary-value" id="summaryTime">—</div>
+        </div>
+        <div style="width: 1px; background: var(--border-gold); flex-shrink: 0;"></div>
+        <div class="booking-summary-item">
+          <div class="booking-summary-label" data-i18n="modal.book.day">Dia</div>
+          <div class="booking-summary-value" id="summaryDay">—</div>
+        </div>
+      </div>
+
+      <div style="height: 20px;"></div>
+
+      <!-- Tipo de serviço -->
+      <div class="form-group">
+        <label class="form-label" data-i18n="modal.book.services">Serviços Desejados</label>
+        <div class="service-options" role="group" aria-label="Selecionar serviços">
+
+          <div class="service-option">
+            <input type="checkbox" id="svcCabelo" name="services" value="cabelo" />
+            <label class="service-option-label" for="svcCabelo">
+              <span class="service-option-icon" aria-hidden="true">💈</span>
+              <span class="service-option-name" data-i18n="service.hair">Cabelo</span>
+            </label>
+          </div>
+
+          <div class="service-option">
+            <input type="checkbox" id="svcBarba" name="services" value="barba" />
+            <label class="service-option-label" for="svcBarba">
+              <span class="service-option-icon" aria-hidden="true">🪒</span>
+              <span class="service-option-name" data-i18n="service.beard">Barba</span>
+            </label>
+          </div>
+
+          <div class="service-option">
+            <input type="checkbox" id="svcSobrancelha" name="services" value="sobrancelha" />
+            <label class="service-option-label" for="svcSobrancelha">
+              <span class="service-option-icon" aria-hidden="true">✨</span>
+              <span class="service-option-name" data-i18n="service.eyebrow">Sobrancelha</span>
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Dados do cliente -->
+      <div class="form-group">
+        <label class="form-label" for="clientName" data-i18n="modal.book.clientName">Nome Completo</label>
+        <input
+          type="text"
+          id="clientName"
+          class="form-input"
+          placeholder="João da Silva"
+          autocomplete="name"
+          required
+          data-i18n-placeholder="modal.book.clientNamePlaceholder"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="clientPhone" data-i18n="modal.book.clientPhone">WhatsApp / Telefone</label>
+        <input
+          type="tel"
+          id="clientPhone"
+          class="form-input"
+          placeholder="(44) 99999-9999"
+          autocomplete="tel"
+          data-i18n-placeholder="modal.book.clientPhonePlaceholder"
+        />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="clientNotes" data-i18n="modal.book.notes">Observações (opcional)</label>
+        <input
+          type="text"
+          id="clientNotes"
+          class="form-input"
+          data-i18n-placeholder="modal.book.notesPlaceholder"
+          placeholder="Ex: prefiro corte mais curto nas laterais"
+        />
+      </div>
+
+      <!-- Mensagem de validação -->
+      <div id="bookingValidationMsg" style="display: none; color: #DC3C3C; font-size: 13px; margin-top: 8px;" role="alert" aria-live="assertive"></div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeBookingModal()" data-i18n="btn.cancel">Cancelar</button>
+      <button class="btn btn-primary" id="confirmBookingBtn" onclick="confirmBooking()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+        <span data-i18n="btn.confirm">Confirmar</span>
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!--
+  SEÇÃO 8: MODAL DE CANCELAMENTO / CONFIRMAÇÃO DESTRUTIVA
+  Exibido antes de cancelar um agendamento para evitar ações acidentais.
+  INTEGRAÇÃO BACK-END: DELETE /api/appointments/{id}
+-->
+<div class="modal-overlay" id="cancelModal" role="dialog" aria-modal="true" aria-labelledby="cancelModalTitle" tabindex="-1">
+  <div class="modal-box" style="max-width: 400px;">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="cancelModalTitle" data-i18n="modal.cancel.title">Cancelar Agendamento</h2>
+        <p class="modal-subtitle" data-i18n="modal.cancel.subtitle">Esta ação não pode ser desfeita</p>
+      </div>
+      <button class="modal-close" onclick="closeCancelModal()" aria-label="Fechar">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <p style="font-size: 14px; color: var(--text-secondary); line-height: 1.7;" data-i18n="modal.cancel.msg">
+        Tem certeza que deseja cancelar este agendamento? O horário será liberado automaticamente.
+      </p>
+      <div class="card" style="margin-top: 16px; background: var(--bg-primary); border-color: var(--border-gold);">
+        <div id="cancelApptDetails" style="font-size: 14px; color: var(--text-primary);"></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeCancelModal()" data-i18n="btn.keep">Manter</button>
+      <button class="btn btn-danger" id="confirmCancelBtn" onclick="executeCancellation()">
+        <span data-i18n="btn.cancelConfirm">Sim, Cancelar</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!--
+  SEÇÃO 9: MODAL DE REAGENDAMENTO
+  Reutiliza o calendário/slots para escolher novo horário.
+  INTEGRAÇÃO BACK-END: PATCH /api/appointments/{id} → { date, time }
+-->
+<div class="modal-overlay" id="rescheduleModal" role="dialog" aria-modal="true" aria-labelledby="rescheduleModalTitle" tabindex="-1">
+  <div class="modal-box" style="max-width: 600px;">
+    <div class="modal-header">
+      <div>
+        <h2 class="modal-title" id="rescheduleModalTitle" data-i18n="modal.reschedule.title">Reagendar Visita</h2>
+        <p class="modal-subtitle" data-i18n="modal.reschedule.subtitle">Escolha um novo dia e horário</p>
+      </div>
+      <button class="modal-close" onclick="closeRescheduleModal()" aria-label="Fechar">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <!-- Mini-calendário para reagendamento — populado pelo JS -->
+      <div id="rescheduleCalendarContainer"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="closeRescheduleModal()" data-i18n="btn.cancel">Cancelar</button>
+      <button class="btn btn-primary" id="confirmRescheduleBtn" onclick="executeReschedule()" disabled>
+        <span data-i18n="btn.rescheduleConfirm">Confirmar Reagendamento</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!--
+  SEÇÃO 10: CONTAINER DE TOAST / NOTIFICAÇÕES
+  Mensagens de feedback ao usuário após ações (agendamento, cancelamento, erro).
+  INTEGRAÇÃO BACK-END: Disparado após respostas da API (201, 200, 400, 500).
+-->
+<div class="toast-container" id="toastContainer" aria-live="polite" aria-label="Notificações" role="status"></div>
+
+<!--
+  SEÇÃO 11: SCRIPTS
+  Carrega o módulo principal. Todos os comportamentos estão encapsulados em script.js.
+  INTEGRAÇÃO BACK-END: Substituir BASE_API_URL no script.js pelo endpoint real em produção.
+-->
+<script src="script.js"></script>
+
+</body>
+</html>
